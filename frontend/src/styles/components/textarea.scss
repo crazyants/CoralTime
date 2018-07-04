@@ -24,18 +24,17 @@ $textAreaHeight: 116px;
   }
 
   .ct-textarea-container {
-    min-height: $textAreaHeight;
     max-height: $textAreaHeight;
-    padding: 1px 10px 1px 0;
+    padding: 1px 10px 1px 0 !important;
   }
 
   &.ct-can-resize {
-    .ct-textarea-container {
-      min-height: 40px;
+    .slimscroll-wrapper {
+      height: 100% !important;
     }
 
     .ct-textarea {
-      min-height: 0;
+      min-height: 40px;
     }
   }
 }

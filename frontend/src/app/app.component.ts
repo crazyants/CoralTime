@@ -1,13 +1,13 @@
 import { Component, OnInit } from '@angular/core';
-
-import { AuthService } from './core/auth/auth.service';
 import { TranslateService } from '@ngx-translate/core';
+import { AuthService } from './core/auth/auth.service';
 import { ImpersonationService } from './services/impersonation.service';
 
 @Component({
 	selector: 'ct-root',
 	templateUrl: 'app.component.html'
 })
+
 export class AppComponent implements OnInit {
 	constructor(private authService: AuthService,
 	            public impersonationService: ImpersonationService,

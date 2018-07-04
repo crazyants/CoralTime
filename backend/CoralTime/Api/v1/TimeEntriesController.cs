@@ -1,15 +1,15 @@
 using CoralTime.BL.Interfaces;
-using CoralTime.Common.Middlewares;
 using CoralTime.ViewModels.TimeEntries;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System;
+using static CoralTime.Common.Constants.Constants.Routes;
 
 namespace CoralTime.Api.v1.Odata
 {
     [Authorize]
-    [Route("api/v1/[controller]")]
+    [Route(BaseControllerRoute)]
     public class TimeEntriesController : BaseController<TimeEntriesController, ITimeEntryService>
     {
         public TimeEntriesController(ITimeEntryService service, ILogger<TimeEntriesController> logger)
@@ -17,85 +17,30 @@ namespace CoralTime.Api.v1.Odata
 
         // GET: api/v1/odata/TimeEntries
         [HttpGet]
-        public IActionResult Get(DateTimeOffset dateBegin, DateTimeOffset dateEnd)
-        {
-            try
-            {
-                return new JsonResult(_service.GetAllTimeEntries(dateBegin, dateEnd));
-            }
-            catch (Exception e)
-            {
-                _logger.LogError($"Get method {e}");
-                var errors = ExceptionsChecker.CheckTimeEntriesException(e);
-                return BadRequest(errors);
-            }
-        }
+        public IActionResult Get(DateTimeOffset dateBegin, DateTimeOffset dateEnd) => new JsonResult(_service.GetAllTimeEntries(dateBegin, dateEnd));
 
         // GET api/v1/odata/TimeEntries(2)
-        [HttpGet("{id}")]
-        public IActionResult GetById(int id)
-        {
-            try
-            {
-                return new JsonResult(_service.GetById(id));
-            }
-            catch (Exception e)
-            {
-                _logger.LogWarning($"GetById method with parameters ({id});\n {e}");
-                var errors = ExceptionsChecker.CheckTimeEntriesException(e);
-                return BadRequest(errors);
-            }
-        }
+        [HttpGet(IdRoute)]
+        public IActionResult GetById(int id) => new JsonResult(_service.GetById(id));
 
         // POST api/v1/odata/TimeEntries
         [HttpPost]
-        public IActionResult Create([FromBody]TimeEntryView timeEntryView)
-        {
-            try
-            {
-                return new JsonResult(_service.Create(timeEntryView));
-            }
-            catch (Exception e)
-            {
-                _logger.LogWarning($"Create method with parameters ({timeEntryView});\n {e}");
-                var errors = ExceptionsChecker.CheckTimeEntriesException(e);
-                return BadRequest(errors);
-            }
-        }
+        public IActionResult Create([FromBody] TimeEntryView timeEntryView) => new JsonResult(_service.Create(timeEntryView));
 
         // PUT api/v1/odata/TimeEntries(2)
-        [HttpPut("{id}")]
+        [HttpPut(IdRoute)]
         public IActionResult Update(int id, [FromBody]TimeEntryView timeEntryView)
         {
             timeEntryView.Id = id;
-
-            try
-            {
-                return new JsonResult(_service.Update(timeEntryView));
-            }
-            catch (Exception e)
-            {
-                _logger.LogWarning($"Update method with parameters ({id}, {timeEntryView});\n {e}");
-                var errors = ExceptionsChecker.CheckTimeEntriesException(e);
-                return BadRequest(errors);
-            }
+            return new JsonResult(_service.Update(timeEntryView));
         }
 
         // DELETE api/v1/odata/TimeEntries(1)
-        [HttpDelete("{id}")]
+        [HttpDelete(IdRoute)]
         public IActionResult Delete(int id)
         {
-            try
-            {
-                _service.Delete(id);
-                return Ok();
-            }
-            catch (Exception e)
-            {
-                _logger.LogWarning($"Delete method with parameters ({id});\n {e}");
-                var errors = ExceptionsChecker.CheckTimeEntriesException(e);
-                return BadRequest(errors);
-            }
+            _service.Delete(id);
+            return Ok();
         }
     }
 }

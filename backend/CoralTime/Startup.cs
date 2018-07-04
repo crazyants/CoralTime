@@ -44,6 +44,9 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography.X509Certificates;
+using IdentityServer4.Test;
+using Microsoft.IdentityModel.Tokens;
+using static CoralTime.Common.Constants.Constants.Routes.OData;
 
 namespace CoralTime
 {
@@ -58,16 +61,20 @@ namespace CoralTime
 
         public IServiceProvider ConfigureServices(IServiceCollection services)
         {
-            // Add MySQL support (At first create DB on MySQL server.)
-            //var sqlConnectionString = (Configuration.GetConnectionString("DefaultConnectionMySQL"));
-            //services.AddDbContext<ApplicationDbContext>(options =>
-            //    options.UseMySQL(
-            //        sqlConnectionString,
-            //        b => b.MigrationsAssembly("CoralTime")));
-
-            services.AddDbContext<AppDbContext>(options =>
-                options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection")));
-
+            bool.TryParse(Configuration["UseMySql"], out var useMySql);
+            if (useMySql)
+            {
+                // Add MySQL support (At first create DB on MySQL server.)
+                services.AddDbContext<AppDbContext>(options =>
+                    options.UseMySql(Configuration.GetConnectionString("DefaultConnectionMySQL"),
+                    b => b.MigrationsAssembly("CoralTime.MySqlMigrations")));
+            }
+            else
+            {
+                // Sql Server
+                services.AddDbContext<AppDbContext>(options => options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection")));
+            }
+            
             services.AddIdentity<ApplicationUser, IdentityRole>()
                 .AddEntityFrameworkStores<AppDbContext>()
                 .AddDefaultTokenProviders();
@@ -85,16 +92,12 @@ namespace CoralTime
             });
 
             AddApplicationServices(services);
-       
             services.AddMemoryCache();
-
             services.AddAutoMapper();
-
             services.AddMvc();
 
             // Add OData
             services.AddOData();
-
             services.AddMvcCore(options =>
             {
                 foreach (var outputFormatter in options.OutputFormatters.OfType<ODataOutputFormatter>().Where(_ => _.SupportedMediaTypes.Count == 0))
@@ -106,9 +109,7 @@ namespace CoralTime
                     inputFormatter.SupportedMediaTypes.Add(new MediaTypeHeaderValue("application/prs.odatatestxx-odata"));
                 }
             });
-
             SetupIdentity(services);
-
             services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new Swashbuckle.AspNetCore.Swagger.Info { Title = "CoralTime", Version = "v1" });
@@ -129,7 +130,7 @@ namespace CoralTime
 
             // Configure NLog
             env.ConfigureNLog("nlog.config");
-
+            
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
@@ -162,7 +163,7 @@ namespace CoralTime
             app.UseMvc(routeBuilder =>
             {
                 routeBuilder.Count().Filter().OrderBy().Expand().Select().MaxTop(null);
-                routeBuilder.MapODataServiceRoute("ODataRoute", "api/v1/odata", edmModel);
+                routeBuilder.MapODataServiceRoute("ODataRoute", BaseODataRoute, edmModel);
                 routeBuilder.EnableDependencyInjection();
             });
 
@@ -189,6 +190,7 @@ namespace CoralTime
             services.AddSingleton<IConfiguration>(sp => Configuration);
 
             services.AddScoped<BaseService>();
+            
             services.AddScoped<UnitOfWork>();
             services.AddScoped<IPersistedGrantDbContext, AppDbContext>();
 
@@ -202,7 +204,6 @@ namespace CoralTime
             services.AddScoped<IMemberProjectRoleService, MemberProjectRoleService>();
             services.AddScoped<IMemberService, MemberService>();
             services.AddScoped<INotificationService, NotificationsService>();
-            services.AddScoped<IPicturesCacheGuid, PicturesCacheGuidService>();
             services.AddScoped<IProfileService, ProfileService>();
             services.AddScoped<IProjectService, ProjectService>();
             services.AddScoped<ITasksService, TasksService>();
@@ -210,7 +211,7 @@ namespace CoralTime
             services.AddScoped<IReportsService, ReportsService>();
             services.AddScoped<IReportExportService, ReportsExportService>();
             services.AddScoped<IReportsSettingsService, ReportsSettingsService>();
-            services.AddScoped<IAvatarService, AvatarService>();
+            services.AddScoped<IImageService, ImageService>();
             services.AddScoped<IRefreshDataBaseService, RefreshDataBaseService>();
             services.AddScoped<CheckSecureHeaderServiceFilter>();
             services.AddScoped<CheckSecureHeaderNotificationFilter>();
@@ -218,27 +219,9 @@ namespace CoralTime
 
         private static void SetupAngularRouting(IApplicationBuilder app)
         {
-            //TODO: add all routes
-            var angularRoutes = new[] {
-                "/home",
-                "/profile",
-                "/projects",
-                "/clients",
-                "/about",
-                "/login",
-                "/tasks",
-                "/users",
-                "/reports",
-                "/calendar",
-                "/settings",
-                "/help",
-                "/forgot-password",
-                "/signin-oidc"
-            };
-
             app.Use(async (context, next) =>
             {
-                if (context.Request.Path.HasValue && null != angularRoutes.FirstOrDefault(ar => context.Request.Path.Value.StartsWith(ar, StringComparison.OrdinalIgnoreCase)))
+                if (context.Request.Path.HasValue && null != Constants.AngularRoutes.FirstOrDefault(ar => context.Request.Path.Value.StartsWith(ar, StringComparison.OrdinalIgnoreCase)))
                 {
                     context.Request.Path = new PathString("/");
 
@@ -279,6 +262,17 @@ namespace CoralTime
 
             var accessTokenLifetime = int.Parse(Configuration["AccessTokenLifetime"]);
             var refreshTokenLifetime = int.Parse(Configuration["RefreshTokenLifetime"]);
+            var slidingRefreshTokenLifetime = int.Parse(Configuration["SlidingRefreshTokenLifetime"]);
+
+            var tokenValidationParameters = new TokenValidationParameters
+            {
+                ValidateIssuer = true,
+                ValidIssuer = Configuration["Authority"],
+                ValidateAudience = true,
+                ValidAudience = "WebAPI",
+                ValidateLifetime = true,
+                ClockSkew = TimeSpan.Zero
+            };
 
             if (isDemo)
             {
@@ -286,7 +280,7 @@ namespace CoralTime
                     .AddDeveloperSigningCredential()
                     .AddInMemoryIdentityResources(Config.GetIdentityResources())
                     .AddInMemoryApiResources(Config.GetApiResources())
-                    .AddInMemoryClients(Config.GetClients(accessTokenLifetime, refreshTokenLifetime))
+                    .AddInMemoryClients(Config.GetClients(accessTokenLifetime: accessTokenLifetime, refreshTokenLifetime: refreshTokenLifetime, slidingRefreshTokenLifetime: slidingRefreshTokenLifetime))
                     .AddAspNetIdentity<ApplicationUser>()
                     .AddResourceOwnerValidator<ResourceOwnerPasswordValidator>()
                     .AddProfileService<IdentityWithAdditionalClaimsProfileService>();
@@ -298,11 +292,19 @@ namespace CoralTime
                 services.AddIdentityServer()
                     .AddInMemoryIdentityResources(Config.GetIdentityResources())
                     .AddInMemoryApiResources(Config.GetApiResources())
-                    .AddInMemoryClients(Config.GetClients(accessTokenLifetime, refreshTokenLifetime))
+                    .AddInMemoryClients(Config.GetClients(accessTokenLifetime: accessTokenLifetime, refreshTokenLifetime: refreshTokenLifetime, slidingRefreshTokenLifetime: slidingRefreshTokenLifetime))
                     .AddAspNetIdentity<ApplicationUser>()
                     .AddResourceOwnerValidator<ResourceOwnerPasswordValidator>()
-                    .AddSigningCredential(cert).AddAppAuthRedirectUriValidator()
-                    .AddProfileService<IdentityWithAdditionalClaimsProfileService>();
+                    .AddSigningCredential(cert)
+                    .AddProfileService<IdentityWithAdditionalClaimsProfileService>()
+                    .AddOperationalStore<AppDbContext>(options =>
+                        {
+                            options.EnableTokenCleanup = true;
+                        }
+                    );
+                var key = new X509SecurityKey(cert);
+                tokenValidationParameters.IssuerSigningKey = key;
+                tokenValidationParameters.ValidateIssuerSigningKey = true;
             }
 
             services.AddAuthentication(options =>
@@ -316,6 +318,7 @@ namespace CoralTime
                     options.Audience = "WebAPI";
                     options.Authority = Configuration["Authority"];
                     options.RequireHttpsMetadata = false;
+                    options.TokenValidationParameters = tokenValidationParameters;
                 });
 
             services.AddAuthorization(options =>
@@ -332,8 +335,8 @@ namespace CoralTime
             builder.EntitySet<MemberView>("Members");
             builder.EntitySet<MemberProjectRoleView>("MemberProjectRoles");
             builder.EntitySet<ProjectRoleView>("ProjectRoles");
-            builder.EntitySet<TaskView>("Tasks");
-            builder.EntitySet<ErrorView>("Errors");
+            builder.EntitySet<TaskTypeView>("Tasks");
+            builder.EntitySet<ErrorODataView>("Errors");
             builder.EntitySet<SettingsView>("Settings");
             builder.EntitySet<ManagerProjectsView>("ManagerProjects");
             builder.EntitySet<ProjectNameView>("ProjectsNames");

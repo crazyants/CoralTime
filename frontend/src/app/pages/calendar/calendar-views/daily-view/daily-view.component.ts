@@ -1,8 +1,9 @@
 import { Component, OnInit, OnDestroy, HostBinding } from '@angular/core';
+import { ActivatedRoute, Params } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { TimeEntry, CalendarDay, DateUtils } from '../../../../models/calendar';
 import { Project } from '../../../../models/project';
-import { Subscription } from 'rxjs';
-import { ActivatedRoute, Params } from '@angular/router';
+import { AuthService } from '../../../../core/auth/auth.service';
 import { CalendarService } from '../../../../services/calendar.service';
 
 @Component({
@@ -22,8 +23,10 @@ export class CalendarDailyViewComponent implements OnInit, OnDestroy {
 
 	private timeEntriesSubscription: Subscription;
 
-	constructor(private route: ActivatedRoute,
-	            private calendarService: CalendarService) {}
+	constructor(private authService: AuthService,
+	            private calendarService: CalendarService,
+	            private route: ActivatedRoute) {
+	}
 
 	ngOnInit() {
 		this.route.params.subscribe((params: Params) => {
@@ -34,7 +37,9 @@ export class CalendarDailyViewComponent implements OnInit, OnDestroy {
 		});
 		this.timeEntriesSubscription = this.calendarService.timeEntriesUpdated
 			.subscribe(() => {
-				this.getTimeEntries(this.projectIds);
+				if (this.authService.isLoggedIn()) {
+					this.getTimeEntries(this.projectIds);
+				}
 			});
 	}
 
@@ -86,23 +91,23 @@ export class CalendarDailyViewComponent implements OnInit, OnDestroy {
 		}
 
 		timeEntries.forEach((timeEntry) => {
-			time += timeEntry['time'];
+			time += timeEntry.timeValues['timeActual'];
 		});
 
 		return this.setTimeString(time);
 	}
 
-	getTotalPlannedTime(timeEntries?: TimeEntry[]): string {
-		let plannedTime = 0;
+	getTotalEstimatedTime(timeEntries?: TimeEntry[]): string {
+		let timeEstimated = 0;
 		if (!timeEntries) {
-			return this.setTimeString(plannedTime);
+			return this.setTimeString(timeEstimated);
 		}
 
 		timeEntries.forEach((timeEntry: TimeEntry) => {
-			plannedTime += timeEntry['plannedTime'];
+			timeEstimated += timeEntry.timeValues['timeEstimated'];
 		});
 
-		return this.setTimeString(plannedTime);
+		return this.setTimeString(timeEstimated);
 	}
 
 	ngOnDestroy() {

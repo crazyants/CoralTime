@@ -12,8 +12,8 @@ export class CalendarProjectsService {
 	readonly odata: ODataService<Project>;
 
 	defaultProject: Project;
-	projects: Project[] = [];
 	filteredProjects: number[] = [];
+	projects: Project[] = [];
 
 	constructor(private authService: AuthService,
 	            private impersonationService: ImpersonationService,
@@ -66,6 +66,11 @@ export class CalendarProjectsService {
 
 	setDefaultProject(project: Project): void {
 		this.defaultProject = project;
-		localStorage.setItem('DEFAULT_PROJECT', JSON.stringify(project));
+
+		if (project) {
+			localStorage.setItem('DEFAULT_PROJECT', JSON.stringify(project));
+		} else {
+			localStorage.removeItem('DEFAULT_PROJECT');
+		}
 	}
 }

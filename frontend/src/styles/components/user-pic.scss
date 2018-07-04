@@ -7,8 +7,9 @@ ct-user-pic {
   height: 30px;
 
   &.ct-user-pic-avatar {
-    width: 200px;
+    width: 199px;
     height: 200px;
+    border: 1px solid #ccc;
   }
 
   img {
@@ -28,7 +29,7 @@ ct-user-pic {
       height: 100%;
       width: 100%;
       background-size: 100%;
-      background: url(/assets/icons/userpic.svg) no-repeat center center;
+      background: url(./assets/icons/userpic.svg) no-repeat center center;
       font-size: 1em;
     }
   }

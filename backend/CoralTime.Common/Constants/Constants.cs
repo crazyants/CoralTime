@@ -1,4 +1,5 @@
 ﻿using CoralTime.ViewModels.DateFormat;
+using CoralTime.ViewModels.Reports.Responce.DropDowns.GroupBy;
 using System;
 using System.Collections.Generic;
 
@@ -6,7 +7,6 @@ namespace CoralTime.Common.Constants
 {
     public static class Constants
     {
-
         public const string UserTypeAdmins = "Admins";
         public const string UserTypeMembers = "Members";
 
@@ -16,6 +16,90 @@ namespace CoralTime.Common.Constants
         public const string ApplicationRoleUser = "user";
 
         public static readonly IEnumerable<string> ApplicationRoles = new[] {ApplicationRoleAdmin, ApplicationRoleUser};
+
+        #endregion
+
+        #region Url adresses
+
+        public const string UrlSetPassword = "/set-password";
+
+        public static readonly string[] AngularRoutes =
+        {
+            "/home",
+            "/profile",
+            "/projects",
+            "/clients",
+            "/about",
+            "/login",
+            "/tasks",
+            "/users",
+            "/reports",
+            "/calendar",
+            "/settings",
+            "/help",
+            "/signin-oidc",
+            UrlSetPassword
+        };
+
+        public static class Routes
+        {
+            public const string BaseControllerRoute = "api/v1/[controller]";
+            public const string IdRoute = "{id}";
+            public const string IdRouteWithMembers = IdRoute + WithMembers;
+            public const string IdRouteWithProjects = IdRoute + WithProjects;
+            public const string UpdateManagerRolesRoute = "UpdateManagerRoles";
+            public const string UpdateClaimsRoute = "UpdateClaims";
+            public const string RefreshDataBaseRoute = "RefreshDataBase";
+            public const string SaveImagesFromDbToStaticFilesRoute = "SaveImagesFromDbToStaticFiles";
+            public const string SendForgotEmailRoute = "sendforgotemail/{email}";
+            public const string ChangePasswordByTokenRoute = "changepasswordbytoken";
+            public const string ChangePasswordByTokenWithTokenRoute = ChangePasswordByTokenRoute + WithToken;
+            public const string CheckPasswordByTokenRoute = "checkforgotpasswordtoken";
+            public const string CheckPasswordByTokenWithTokenRoute = CheckPasswordByTokenRoute + WithToken;
+            public const string MemberRoute = "Member(" + IdRoute + ")";
+            public const string MemberRouteWithNotifications = MemberRoute + WithNotifications;
+            public const string MemberRouteWithPreferences = MemberRoute + WithPreferences;
+            public const string MemberRouteWithPersonalInfo = MemberRoute + WithPersonalInfo;
+            public const string MemberRouteWithUrlAvatar = MemberRoute + WithUrlAvatar;
+            public const string UploadImageRoute = "UploadImage";
+            public const string ProjectsRoute = "Projects";
+            public const string DateFormatsRoute = "DateFormats";
+            public const string ProjectMembersWithIdRoute = "ProjectMembers/" + IdRoute;
+            public const string ByProjectSettingsRoute = "ByProjectSettings";
+            public const string SendWeeklyTimeEntryUpdatesRoute = "SendWeeklyTimeEntryUpdates";
+            public const string CustomQueryRoute = "CustomQuery";
+            public const string CustomQueryWithIdRoute = CustomQueryRoute + "/" + IdRoute;
+            public const string AuthorizeRoute = "authorize";
+            public const string AuthorizeActiveUserRoute = AuthorizeRoute + "/activeuser";
+            public const string AuthorizeAdminRoute = AuthorizeRoute + "/admin";
+            public const string AuthorizeUserRoute = AuthorizeRoute + "/user";
+            public const string UnauthorizeRoute = "unauthorize";
+            public const string PingRoute = "ping";
+            public const string PingdatabaseRoute = "pingdatabase";
+            
+            private const string WithMembers = "/members";
+            private const string WithProjects = "/projects";
+            private const string WithNotifications = "/Notifications";
+            private const string WithPreferences = "/Preferences";
+            private const string WithPersonalInfo = "/PersonalInfo";
+            private const string WithUrlAvatar = "/UrlAvatar";
+            private const string WithToken = "/{token}";
+            
+            public static class OData
+            {
+                public const string BaseODataRoute = "api/v1/odata";
+                public const string BaseODataControllerRoute = BaseODataRoute + "/[controller]";
+                public const string TasksWithIdRoute = "Tasks(" + IdRoute + ")";
+                public const string ClientsWithIdRoute = "Clients(" + IdRoute + ")";
+                public const string ProjectsWithIdRoute = "Projects(" + IdRoute + ")";
+                public const string ProjectsRouteWithMembers = ProjectsWithIdRoute + WithMembers;
+                public const string MembersWithIdRoute = "Members(" + IdRoute + ")";
+                public const string MembersRouteWithProjects = MembersWithIdRoute + WithProjects;
+                public const string MemberProjectRolesWithIdRoute = "MemberProjectRoles(" + IdRoute + ")";
+                public const string MemberProjectRolesRouteWithProjects = MemberProjectRolesWithIdRoute + WithProjects;
+                public const string MemberProjectRolesRouteWithMembers = MemberProjectRolesWithIdRoute + WithMembers;
+            }
+        }
 
         #endregion
 
@@ -29,6 +113,7 @@ namespace CoralTime.Common.Constants
         #endregion
 
         public const string JwtIsManagerClaimType = "isManager";
+        public const string JwtRefreshTokenLifeTimeClaimType = "refreshTokenLifeTime";
         public const string ImpersonatedUserNameHeader = "Impersonate";
 
         public const string HeaderNameAuthorization = "Authorization";
@@ -44,6 +129,13 @@ namespace CoralTime.Common.Constants
         public static string EnvName { get; set; }
         
         public const string CoralTime = "CoralTime";
+
+        public enum FileType
+        {
+            Excel = 0,
+            CSV = 1,
+            PDF = 2
+        }
 
         public enum LockTimePeriod
         {
@@ -104,14 +196,34 @@ namespace CoralTime.Common.Constants
 
         };
 
-        public enum ReportsGroupBy
+        public enum ReportsGroupByIds
         {
-            None = 0,
             Project = 1,
             User = 2,
             Date = 3,
             Client = 4,
             UnknownGrouping = 5
+        }
+
+        public enum ShowColumnModelIds
+        {
+            ShowEstimatedTime = 1,
+            ShowDate = 2,
+            ShowNotes = 3,
+            ShowStartFinish = 4
+        }
+
+        public enum DatesStaticIds
+        {
+            Today = 1,
+            ThisWeek = 2,
+            ThisMonth = 3,
+            ThisYear = 4,
+
+            Yesterday = 5,
+            LastWeek = 6,
+            LastMonth = 7,
+            LastYear = 9
         }
 
         #region DayOfWeek (BitMask).
@@ -155,11 +267,17 @@ namespace CoralTime.Common.Constants
         public static class Folders
         {
             public static string IconFolder => "Icons";
+
             public static string AvatarFolder => "Avatars";
+
             public static string StaticFilesFolder => "StaticFiles";
         }
 
-        public static string DefaultIconFileName => "userpic.svg"; 
+        public const string ImageTypeAvatar = "ImageTypeAvatar";
+        public const string ImageTypeIcon = "ImageTypeIcon";
+
+        public const string ImageTypeSizeIcon = "40";
+        public const string ImageTypeSizeAvatar = "200";
 
         #endregion
     }
